@@ -78,3 +78,7 @@ https://vod.tvp.pl/sess/TVPlayer2/api.php?id=<externalUid>&@method=getTvpConfig&
 (externalUid wyciągniesz z `https://vod.tvp.pl/api/products/vods/<ID>?lang=pl&platform=BROWSER`)
 i zobacz jak faktycznie nazywa się pole z linkiem m3u8 — potem popraw
 `candidates` w `resolveM3u8()` w `index.js`.
+
+
+
+https://tvp-resolver.kotmiuaczek.workers.dev/abc
