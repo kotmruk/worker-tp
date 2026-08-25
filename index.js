@@ -65,9 +65,20 @@ async function resolveM3u8(productId) {
   // Dokładnie ten endpoint, którego używa aktualny extractor TVP w yt-dlp
   // (yt_dlp/extractor/tvp.py, klasa TVPVODVideoIE) dla kanałów live:
   //   https://vod.tvp.pl/api/products/{id}/videos/playlist?lang=pl&platform=BROWSER&videoType=MOVIE
+  const browserHeaders = {
+    "User-Agent": ua,
+    "Referer": "https://vod.tvp.pl/",
+    "Origin": "https://vod.tvp.pl",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.8",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Dest": "empty",
+  };
+
   const res = await fetch(
     `https://vod.tvp.pl/api/products/${productId}/videos/playlist?lang=pl&platform=BROWSER&videoType=MOVIE`,
-    { headers: { "User-Agent": ua, "Referer": "https://vod.tvp.pl/" } }
+    { headers: browserHeaders }
   );
 
   // TVP potrafi zwrócić 403 jako "normalną" odpowiedź z body zawierającym
