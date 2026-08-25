@@ -9,13 +9,19 @@
 //   https://tvp-resolver.<twoja-subdomena>.workers.dev/abc
 //
 // VLC/Kodi podążą za redirectem i dostaną aktualny token.
+//
+// WAŻNE: worker robi TYLKO jeden redirect (na link z vod.tvp.pl) i
+// zatrzymuje się. Dalsze przekierowania (np. do cache.orange.pl) musi
+// wykonać sam klient (VLC/przeglądarka) swoim własnym IP — token TVP
+// wygląda na przypięty do adresu IP, więc jeśli worker próbuje przejść
+// przez kolejne skoki sam (z serwerów Cloudflare, nie z Twojego IP),
+// dostaje 403 na kolejnym hopie. Nie próbujemy tego "skracać" po stronie workera.
 
-// Mapowanie: klucz z URL -> ID produktu "live" z vod.tvp.pl
-// (widoczne w adresie strony, np. vod.tvp.pl/live,1/tvp-abc,399704 -> 399704)
 const CHANNELS = {
   abc: "399704", // TVP ABC
   kobieta: "399701", // TVP Kobieta
   abc2: "399727", // TVP ABC 2
+  alfa: "399726", // TVP Alfa
 };
 
 export default {
@@ -66,27 +72,10 @@ async function resolveM3u8(productId) {
   if (!res.ok) throw new Error(`playlist API zwróciło ${res.status}`);
 
   const data = await res.json();
-  let hlsUrl = data?.sources?.HLS?.[0]?.src;
+  const hlsUrl = data?.sources?.HLS?.[0]?.src;
 
   if (!hlsUrl) {
     throw new Error("nie znaleziono linku HLS w odpowiedzi playlist API");
-  }
-
-  // TVP zazwyczaj przekierowuje ten link (302) dalej, np. do cache.orange.pl.
-  // Podążamy za tym sami tu, na serwerze, żeby VLC dostał już finalny,
-  // jednoetapowy link zamiast łańcucha przekierowań (mniej okazji do timeoutu).
-  for (let i = 0; i < 5; i++) {
-    const hopRes = await fetch(hlsUrl, {
-      method: "GET",
-      redirect: "manual",
-      headers: { "User-Agent": ua, "Referer": "https://vod.tvp.pl/" },
-    });
-    const location = hopRes.headers.get("location");
-    if (location && [301, 302, 303, 307, 308].includes(hopRes.status)) {
-      hlsUrl = new URL(location, hlsUrl).toString();
-      continue;
-    }
-    break;
   }
 
   return hlsUrl;
