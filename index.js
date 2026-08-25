@@ -69,9 +69,25 @@ async function resolveM3u8(productId) {
     `https://vod.tvp.pl/api/products/${productId}/videos/playlist?lang=pl&platform=BROWSER&videoType=MOVIE`,
     { headers: { "User-Agent": ua, "Referer": "https://vod.tvp.pl/" } }
   );
-  if (!res.ok) throw new Error(`playlist API zwróciło ${res.status}`);
 
-  const data = await res.json();
+  // TVP potrafi zwrócić 403 jako "normalną" odpowiedź z body zawierającym
+  // pole "code" (np. geoblokada, materiał niedostępny) zamiast twardej
+  // blokady dostępu — czytamy body niezależnie od statusu, żeby pokazać
+  // prawdziwy powód zamiast suchego "403".
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`playlist API zwróciło ${res.status} (body nie jest JSON-em)`);
+  }
+
+  if (data?.code) {
+    throw new Error(`playlist API zwróciło ${res.status}, kod: ${data.code}`);
+  }
+  if (!res.ok) {
+    throw new Error(`playlist API zwróciło ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+
   const hlsUrl = data?.sources?.HLS?.[0]?.src;
 
   if (!hlsUrl) {
