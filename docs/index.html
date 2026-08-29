@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<title>TVP live — resolver</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #111; color: #eee; padding: 2rem; }
+  button { display: block; width: 100%; max-width: 320px; margin: 0.5rem 0; padding: 0.8rem;
+           font-size: 1.1rem; background: #222; color: #eee; border: 1px solid #444;
+           border-radius: 8px; cursor: pointer; }
+  button:hover { background: #333; }
+  #status { margin-top: 1.5rem; white-space: pre-wrap; word-break: break-all; font-size: 0.9rem; color: #aaa; }
+  a { color: #6cf; }
+</style>
+</head>
+<body>
+<h2>TVP live — kliknij kanał</h2>
+<p>Ten request idzie z Twojej przeglądarki (Twoje własne IP), więc omija blokadę GeoIP,
+na którą łapie się serwerowy resolver.</p>
+
+<button onclick="play('399704')">TVP ABC</button>
+<button onclick="play('399727')">TVP ABC 2</button>
+<button onclick="play('399701')">TVP Kobieta</button>
+<button onclick="play('399726')">TVP Alfa</button>
+
+<div id="status"></div>
+
+<script>
+async function play(productId) {
+  const status = document.getElementById('status');
+  status.textContent = 'Pytam TVP o świeży link...';
+  try {
+    const res = await fetch(
+      `https://vod.tvp.pl/api/products/${productId}/videos/playlist?lang=pl&platform=BROWSER&videoType=MOVIE`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    const data = await res.json();
+    if (data && data.code) {
+      status.textContent = 'Błąd z TVP: ' + data.code;
+      return;
+    }
+    const hls = data && data.sources && data.sources.HLS && data.sources.HLS[0] && data.sources.HLS[0].src;
+    if (!hls) {
+      status.textContent = 'Nie znaleziono linku HLS w odpowiedzi:\n' + JSON.stringify(data);
+      return;
+    }
+    status.innerHTML = 'Link gotowy — <a href="' + hls + '" target="_blank">otwórz / skopiuj</a><br><br>' + hls;
+    window.location.href = hls;
+  } catch (e) {
+    status.textContent = 'Błąd zapytania (możliwe że to CORS): ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
