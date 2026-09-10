@@ -1,0 +1,2 @@
+[tool.vercel]
+entrypoint = "tvp_resolver:app"
